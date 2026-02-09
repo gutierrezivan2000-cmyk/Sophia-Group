@@ -1,17 +1,79 @@
 import zipfile
 import os
 import shutil
+import subprocess
 
-project_root = '/vercel/share/v0-project'
-zip_path = os.path.join(project_root, 'SohpiaGroup.zip')
+# Discover project root dynamically
+cwd = os.getcwd()
+print(f"Current working directory: {cwd}")
+
+# Try multiple possible locations
+possible_roots = [cwd, '/vercel/share/v0-project', os.path.dirname(os.path.abspath('SohpiaGroup.zip'))]
+project_root = None
+zip_path = None
+
+for root in possible_roots:
+    candidate = os.path.join(root, 'SohpiaGroup.zip')
+    print(f"Checking: {candidate} -> exists: {os.path.exists(candidate)}")
+    if os.path.exists(candidate):
+        project_root = root
+        zip_path = candidate
+        break
+
+# Also check if the zip is in the current directory directly
+if zip_path is None and os.path.exists('SohpiaGroup.zip'):
+    project_root = cwd
+    zip_path = os.path.abspath('SohpiaGroup.zip')
+
+if project_root is None:
+    # Walk from cwd upward
+    check = cwd
+    for _ in range(5):
+        candidate = os.path.join(check, 'SohpiaGroup.zip')
+        if os.path.exists(candidate):
+            project_root = check
+            zip_path = candidate
+            break
+        check = os.path.dirname(check)
+
+if project_root is None:
+    print("ERROR: Could not find SohpiaGroup.zip anywhere!")
+    # List everything in cwd
+    print(f"\nContents of cwd ({cwd}):")
+    for item in os.listdir(cwd):
+        print(f"  {item}")
+    exit(1)
+
 extract_dir = os.path.join(project_root, '_extracted')
 
-print(f"ZIP path: {zip_path}")
+print(f"\nZIP path: {zip_path}")
 print(f"Extract dir: {extract_dir}")
 print(f"Project root: {project_root}")
 
+# Debug: list all files in project root
+print("\nFiles in project root:")
+for item in os.listdir(project_root):
+    full = os.path.join(project_root, item)
+    if os.path.isfile(full):
+        size = os.path.getsize(full)
+        print(f"  FILE: {item} ({size} bytes)")
+        # Check if it's a Git LFS pointer
+        if size < 200:
+            with open(full, 'r', errors='ignore') as f:
+                content = f.read()
+                if 'git-lfs' in content:
+                    print(f"    -> This is a Git LFS pointer!")
+                    print(f"    Content: {content[:200]}")
+    else:
+        print(f"  DIR: {item}")
+
 if not os.path.exists(zip_path):
     print("ERROR: ZIP file not found!")
+    # Try to find it elsewhere
+    for root, dirs, files in os.walk(project_root):
+        for f in files:
+            if f.endswith('.zip'):
+                print(f"  Found ZIP at: {os.path.join(root, f)}")
     exit(1)
 
 print(f"ZIP file size: {os.path.getsize(zip_path)} bytes")
