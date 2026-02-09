@@ -2,13 +2,9 @@ import zipfile
 import os
 import shutil
 
-zip_path = os.path.join(os.path.dirname(__file__), '..', 'SohpiaGroup.zip')
-extract_dir = os.path.join(os.path.dirname(__file__), '..', '_extracted')
-project_root = os.path.join(os.path.dirname(__file__), '..')
-
-zip_path = os.path.abspath(zip_path)
-extract_dir = os.path.abspath(extract_dir)
-project_root = os.path.abspath(project_root)
+project_root = '/vercel/share/v0-project'
+zip_path = os.path.join(project_root, 'SohpiaGroup.zip')
+extract_dir = os.path.join(project_root, '_extracted')
 
 print(f"ZIP path: {zip_path}")
 print(f"Extract dir: {extract_dir}")
